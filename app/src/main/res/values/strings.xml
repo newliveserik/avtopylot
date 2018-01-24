@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">AVTOPYLOT</string>
+    <string name="company_name">A V T O P Y L O T</string>
+    <string name="trezvod_desc">Услуга трезвый водитель</string>
+    <string name="bottom_slogan">Ищите сервис трезвого водителя?</string>
+    <string name="SignIn">ВХОД</string>
+    <string name="Register">РЕГИСТРАЦИЯ</string>
+</resources>
