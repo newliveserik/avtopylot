@@ -22,6 +22,7 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.rengwuxian.materialedittext.MaterialEditText;
 
+import dmax.dialog.SpotsDialog;
 import kz.avtopylot.trezvod.avtopylot.Model.User;
 import uk.co.chrisjenx.calligraphy.CalligraphyConfig;
 import uk.co.chrisjenx.calligraphy.CalligraphyContextWrapper;
@@ -97,6 +98,9 @@ public class MainActivity extends AppCompatActivity {
                     public void onClick(DialogInterface dialogInterface, int i) {
                         dialogInterface.dismiss();
 
+                        //Set disable button Sign In if is processing
+                        btnSignIn.setEnabled(false);
+
                         //Check validation
 
                         if (TextUtils.isEmpty(edtEmail.getText().toString())) {
@@ -114,12 +118,16 @@ public class MainActivity extends AppCompatActivity {
                             return;
                         }
 
+                        final SpotsDialog waitingDialog = new SpotsDialog(MainActivity.this);
+                        waitingDialog.show();
+
                         //Login
 
                         auth.signInWithEmailAndPassword(edtEmail.getText().toString(),edtPassword.getText().toString())
                                 .addOnSuccessListener(new OnSuccessListener<AuthResult>() {
                                     @Override
                                     public void onSuccess(AuthResult authResult) {
+                                        waitingDialog.dismiss();
                                       startActivity(new Intent(MainActivity.this,welcome.class));
                                       finish();
                                     }
@@ -127,8 +135,12 @@ public class MainActivity extends AppCompatActivity {
                                 .addOnFailureListener(new OnFailureListener() {
                                     @Override
                                     public void onFailure(@NonNull Exception e) {
+                                        waitingDialog.dismiss();
                                         Snackbar.make(rootLayout,"Failed "+e.getMessage(),Snackbar.LENGTH_SHORT)
                                                 .show();
+
+                                        //Active button
+                                        btnSignIn.setEnabled(true);
                                     }
                                 });
                     }
