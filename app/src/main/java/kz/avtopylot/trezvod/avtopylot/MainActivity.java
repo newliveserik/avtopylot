@@ -146,6 +146,7 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
+
     private void showRegisterDialog(){
         AlertDialog.Builder dialog = new AlertDialog.Builder(this);
         dialog.setTitle("Регистрация");
