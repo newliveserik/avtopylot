@@ -22,12 +22,15 @@ import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
+import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
+import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 
-public class welcome extends FragmentActivity implements OnMapReadyCallback,
+public class Welcome extends FragmentActivity implements OnMapReadyCallback,
         GoogleApiClient.ConnectionCallbacks,
         GoogleApiClient.OnConnectionFailedListener,
         LocationListener
@@ -119,7 +122,8 @@ public class welcome extends FragmentActivity implements OnMapReadyCallback,
                         //Add Marker
                         if(mCurrent !=null)
                             mCurrent.remove();
-                        mCurrent=mMap.addMarker();
+                        mCurrent=mMap.addMarker(new MarkerOptions().icon(BitmapDescriptorFactory.fromResource(R.drawable.driver))
+                        .position(new LatLng(latitude,longitude)).title("Вы"));
                     }
                 });
             }
