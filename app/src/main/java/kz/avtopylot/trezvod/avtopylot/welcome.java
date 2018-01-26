@@ -1,21 +1,30 @@
 package kz.avtopylot.trezvod.avtopylot;
 
+import android.*;
+import android.Manifest;
+import android.content.pm.PackageManager;
 import android.location.Location;
 import android.location.LocationListener;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.support.design.widget.Snackbar;
+import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
 
 import com.firebase.geofire.GeoFire;
+import com.firebase.geofire.GeoLocation;
 import com.github.glomadrian.materialanimatedswitch.MaterialAnimatedSwitch;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationRequest;
+import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.Marker;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 
 public class welcome extends FragmentActivity implements OnMapReadyCallback,
@@ -55,6 +64,77 @@ public class welcome extends FragmentActivity implements OnMapReadyCallback,
         mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
+
+        //init view
+
+        location_switch = (MaterialAnimatedSwitch) findViewById(R.id.location_switch);
+        location_switch.setOnCheckedChangeListener(new MaterialAnimatedSwitch.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(boolean isOnline) {
+                if(isOnline){
+                    startLocationUbdates();
+                    dispalyLocation();
+                    Snackbar.make(mapFragment.getView(),"You are online",Snackbar.LENGTH_SHORT).show();
+                }
+                else{
+                    stopLocationUpdates();
+                    mCurrent.remove();
+                    Snackbar.make(mapFragment.getView(),"You are offline",Snackbar.LENGTH_SHORT).show();
+                }
+            }
+        });
+    }
+
+    private void stopLocationUpdates() {
+
+        if(ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION)!= PackageManager.PERMISSION_GRANTED &&
+                ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) !=PackageManager.PERMISSION_GRANTED);
+        {
+
+            return;
+        }
+        LocationServices.FusedLocationApi.removeLocationUpdates(mGoogleApiClient,this);
+    }
+
+
+
+    private void dispalyLocation() {
+        if(ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION)!= PackageManager.PERMISSION_GRANTED &&
+                ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) !=PackageManager.PERMISSION_GRANTED   );
+        {
+
+            return;
+        }
+        mLastLocation = LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient);
+
+        if(mLastLocation != null){
+            if(location_switch.isChecked()){
+                final double latitude =mLastLocation.getLatitude();
+                final double longitude = mLastLocation.getLongitude();
+
+                //Ubdate To Firebase
+                geoFire.setLocation(FirebaseAuth.getInstance().getCurrentUser().getUid(), new GeoLocation(latitude, longitude), new GeoFire.CompletionListener() {
+                    @Override
+                    public void onComplete(String key, DatabaseError error) {
+                        //Add Marker
+                        if(mCurrent !=null)
+                            mCurrent.remove();
+                        mCurrent=mMap.addMarker();
+                    }
+                });
+            }
+        }
+    }
+
+    private void startLocationUbdates() {
+
+        if(ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION)!= PackageManager.PERMISSION_GRANTED &&
+                ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) !=PackageManager.PERMISSION_GRANTED   );
+        {
+
+            return;
+        }
+        LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient,mLocationRequest,this);
     }
 
 
