@@ -158,6 +158,7 @@ public class Welcome extends FragmentActivity implements OnMapReadyCallback,
                 .addOnConnectionFailedListener(this)
                 .addApi(LocationServices.API)
                 .build();
+        mGoogleApiClient.connect();
     }
 
     private boolean checkPlayServices() {
@@ -208,7 +209,7 @@ public class Welcome extends FragmentActivity implements OnMapReadyCallback,
                         //Add Marker
                         if(mCurrent !=null)
                             mCurrent.remove();
-                        mCurrent=mMap.addMarker(new MarkerOptions().icon(BitmapDescriptorFactory.fromResource(R.drawable.driver))
+                        mCurrent=mMap.addMarker(new MarkerOptions().icon(BitmapDescriptorFactory.fromResource(R.drawable.car))
                         .position(new LatLng(latitude,longitude)).title("Вы"));
 
                         //Move camera to position
