@@ -6,4 +6,5 @@
     <string name="SignIn">ВХОД</string>
     <string name="Register">РЕГИСТРАЦИЯ</string>
     <string name="title_activity_welcome">Map</string>
+    <string name="find_user_btn">Найти клиентов</string>
 </resources>
