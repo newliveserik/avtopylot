@@ -209,7 +209,7 @@ public class Welcome extends FragmentActivity implements OnMapReadyCallback,
                         //Add Marker
                         if(mCurrent !=null)
                             mCurrent.remove();
-                        mCurrent=mMap.addMarker(new MarkerOptions().icon(BitmapDescriptorFactory.fromResource(R.drawable.car))
+                        mCurrent=mMap.addMarker(new MarkerOptions().icon(BitmapDescriptorFactory.fromResource(R.drawable.driver))
                         .position(new LatLng(latitude,longitude)).title("Вы"));
 
                         //Move camera to position
