@@ -43,8 +43,7 @@ import com.google.firebase.database.FirebaseDatabase;
 public class Welcome extends FragmentActivity implements OnMapReadyCallback,
         GoogleApiClient.ConnectionCallbacks,
         GoogleApiClient.OnConnectionFailedListener,
-        LocationListener
-{
+        LocationListener {
 
     private GoogleMap mMap;
 
@@ -57,9 +56,9 @@ public class Welcome extends FragmentActivity implements OnMapReadyCallback,
     private GoogleApiClient mGoogleApiClient;
     private Location mLastLocation;
 
-    private static int UBDATE_INTERVAL=5000;
-    private static int FATEST_INTERVAL=3000;
-    private static int DISPLAYCEMENT=10;
+    private static int UPDATE_INTERVAL = 5000;
+    private static int FASTEST_INTERVAL = 3000;
+    private static int DISPLAYCEMENT = 10;
 
     DatabaseReference drivers;
     GeoFire geoFire;
@@ -69,47 +68,93 @@ public class Welcome extends FragmentActivity implements OnMapReadyCallback,
     SupportMapFragment mapFragment;
 
 
-    @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        switch (requestCode){
-            case MY_PERMISSION_REQUEST_CODE:
-                if(grantResults.length>0 && grantResults[0] == PackageManager.PERMISSION_GRANTED)
-                {
-                    if(checkPlayServices()){
-                        buildGoogleApiClient();
-                        creatLocationRequest();
-                        if(location_switch.isChecked())
-                            dispalyLocation();
-                    }
-                }
-        }
-    }
-
-    @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_welcome);
 
-        // Obtain the SupportMapFragment and get notified when the map is ready to be used.
-        mapFragment = (SupportMapFragment) getSupportFragmentManager()
-                .findFragmentById(R.id.map);
+        setContentView(R.layout.activity_welcome);
+        mapFragment =(SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
 
-        //init view
-
+        //Init view
         location_switch = (MaterialAnimatedSwitch) findViewById(R.id.location_switch);
         location_switch.setOnCheckedChangeListener(new MaterialAnimatedSwitch.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(boolean isOnline) {
                 if(isOnline){
                     startLocationUpdates();
-                    dispalyLocation();
-                    Snackbar.make(mapFragment.getView(),"You are online",Snackbar.LENGTH_SHORT).show();
+                    displayLocation();
+                    Snackbar.make(mapFragment.getView(),"Вы онлайн",Snackbar.LENGTH_SHORT).show();
                 }
                 else{
                     stopLocationUpdates();
                     mCurrent.remove();
-                    Snackbar.make(mapFragment.getView(),"You are offline",Snackbar.LENGTH_SHORT).show();
+                    Snackbar.make(mapFragment.getView(),"Вы неонлайн",Snackbar.LENGTH_SHORT).show();
+                }
+            }
+        });
+    }
+
+    private void startLocationUpdates() {
+
+        if(ActivityCompat.checkSelfPermission(this,Manifest.permission.ACCESS_COARSE_LOCATION)!=PackageManager.PERMISSION_GRANTED &&
+                ActivityCompat.checkSelfPermission(this,Manifest.permission.ACCESS_FINE_LOCATION)!=PackageManager.PERMISSION_GRANTED){
+            return;
+        }
+        LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient,mLocationRequest,this);
+    }
+
+    private void displayLocation() {
+        if(ActivityCompat.checkSelfPermission(this,Manifest.permission.ACCESS_COARSE_LOCATION)!=PackageManager.PERMISSION_GRANTED &&
+                ActivityCompat.checkSelfPermission(this,Manifest.permission.ACCESS_FINE_LOCATION)!=PackageManager.PERMISSION_GRANTED){
+            return;
+        }
+        mLastLocation = LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient);
+        if(mLastLocation !=null){
+            if(location_switch.isChecked()){
+                final double latitude = mLastLocation.getLatitude();
+                final double longitude = mLastLocation.getLongitude();
+
+                geoFire.setLocation(FirebaseAuth.getInstance().getCurrentUser().getUid(), new GeoLocation(latitude, longitude), new GeoFire.CompletionListener() {
+                    @Override
+                    public void onComplete(String key, DatabaseError error) {
+                        if(mCurrent !=null){
+                            mCurrent.remove();//remove aleady marker
+                            mCurrent = mMap.addMarker(new MarkerOptions().icon(BitmapDescriptorFactory.fromResource(R.drawable.car)).position(new LatLng(latitude,longitude)).title("Вы"));
+
+                            //Move camera poition
+                            mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(latitude,longitude),15.0f));
+
+                            //rotate Marker
+                            rotateMarker(mCurrent,-360,mMap);
+                        }
+
+                    }
+                });
+
+            }
+        }
+        else{
+            Log.d("ОШИБКА","Не могу получить ваше местоположение");
+        }
+
+    }
+
+    private void rotateMarker(final Marker mCurrent, final float i, GoogleMap mMap) {
+        final Handler handler=new Handler();
+        final long start = SystemClock.uptimeMillis();
+        final float startRotation = mCurrent.getRotation();
+        final long duration = 1500;
+        final Interpolator interpolator = new LinearInterpolator();
+
+        handler.post(new Runnable() {
+            @Override
+            public void run() {
+                long elapsed = SystemClock.uptimeMillis() - start;
+                float t = interpolator.getInterpolation((float)elapsed/duration);
+                float rot =t * i + (1-t) * startRotation;
+                mCurrent.setRotation(-rot > 180?rot/2:rot);
+                if(t>1.0){
+                    handler.postDelayed(this,16);
                 }
             }
         });
@@ -119,41 +164,58 @@ public class Welcome extends FragmentActivity implements OnMapReadyCallback,
         geoFire = new GeoFire(drivers);
         setUpLocation();
 
+    }
 
-
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        switch (requestCode)
+        {
+            case MY_PERMISSION_REQUEST_CODE:
+                if(grantResults.length > 0 && grantResults [0]==PackageManager.PERMISSION_GRANTED){
+                    if(checkPlayServices()){
+                        buildGoogleApiClient();
+                        createRequestLocation();
+                        if(location_switch.isChecked()){
+                            displayLocation();
+                        }
+                }
+        }
+    }
     }
 
     private void setUpLocation() {
-        if(ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION)!= PackageManager.PERMISSION_GRANTED &&
-                ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) !=PackageManager.PERMISSION_GRANTED)
-        {
+
+        if(ActivityCompat.checkSelfPermission(this,Manifest.permission.ACCESS_COARSE_LOCATION)!=PackageManager.PERMISSION_GRANTED &&
+                ActivityCompat.checkSelfPermission(this,Manifest.permission.ACCESS_FINE_LOCATION)!=PackageManager.PERMISSION_GRANTED){
+            //request runtime permisions
             ActivityCompat.requestPermissions(this,new String[]{
                     Manifest.permission.ACCESS_COARSE_LOCATION,
                     Manifest.permission.ACCESS_FINE_LOCATION
             },MY_PERMISSION_REQUEST_CODE);
-
         }
-        else{
+        else
+        {
             if(checkPlayServices()){
                 buildGoogleApiClient();
-                creatLocationRequest();
-                if(location_switch.isChecked())
-                    dispalyLocation();
+                createRequestLocation();
+                if(location_switch.isChecked()){
+                    displayLocation();
+                }
             }
-        }
+
+        };
     }
 
-    private void creatLocationRequest() {
-
+    private void createRequestLocation() {
         mLocationRequest = new LocationRequest();
-        mLocationRequest.setInterval(UBDATE_INTERVAL);
-        mLocationRequest.setFastestInterval(FATEST_INTERVAL);
+        mLocationRequest.setInterval(UPDATE_INTERVAL);
+        mLocationRequest.setFastestInterval(FASTEST_INTERVAL);
         mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
         mLocationRequest.setSmallestDisplacement(DISPLAYCEMENT);
     }
 
     private void buildGoogleApiClient() {
-        mGoogleApiClient =new GoogleApiClient.Builder(this)
+        mGoogleApiClient = new GoogleApiClient.Builder(this)
                 .addConnectionCallbacks(this)
                 .addOnConnectionFailedListener(this)
                 .addApi(LocationServices.API)
@@ -175,12 +237,10 @@ public class Welcome extends FragmentActivity implements OnMapReadyCallback,
         return true;
     }
 
+
     private void stopLocationUpdates() {
-
-        if(ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION)!= PackageManager.PERMISSION_GRANTED &&
-                ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) !=PackageManager.PERMISSION_GRANTED)
-        {
-
+        if(ActivityCompat.checkSelfPermission(this,Manifest.permission.ACCESS_COARSE_LOCATION)!=PackageManager.PERMISSION_GRANTED &&
+                ActivityCompat.checkSelfPermission(this,Manifest.permission.ACCESS_FINE_LOCATION)!=PackageManager.PERMISSION_GRANTED){
             return;
         }
         LocationServices.FusedLocationApi.removeLocationUpdates(mGoogleApiClient,this);
@@ -188,90 +248,11 @@ public class Welcome extends FragmentActivity implements OnMapReadyCallback,
 
 
 
-    private void dispalyLocation() {
-        if(ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION)!= PackageManager.PERMISSION_GRANTED &&
-                ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) !=PackageManager.PERMISSION_GRANTED   )
-        {
-
-            return;
-        }
-        mLastLocation = LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient);
-
-        if(mLastLocation != null){
-            if(location_switch.isChecked()){
-                final double latitude =mLastLocation.getLatitude();
-                final double longitude = mLastLocation.getLongitude();
-
-                //Ubdate To Firebase
-                geoFire.setLocation(FirebaseAuth.getInstance().getCurrentUser().getUid(), new GeoLocation(latitude, longitude), new GeoFire.CompletionListener() {
-                    @Override
-                    public void onComplete(String key, DatabaseError error) {
-                        //Add Marker
-                        if(mCurrent !=null)
-                            mCurrent.remove();
-                        mCurrent=mMap.addMarker(new MarkerOptions().icon(BitmapDescriptorFactory.fromResource(R.drawable.driver))
-                        .position(new LatLng(latitude,longitude)).title("Вы"));
-
-                        //Move camera to position
-                        mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(latitude,longitude),15.0f));
-
-                        //Draw animation marker rotation
-                        rotateMarker(mCurrent,-360,mMap);
-
-                    }
-                });
-            }
-        }
-        else {
-            Log.d("ОШИБКА","ОШИБКА ОТОБРАЖЕНИЯ ВАШЕГО МЕСТОПОЛОЖЕНИЯ");
-        }
-    }
-
-    private void rotateMarker(final Marker mCurrent, final float i, GoogleMap mMap) {
-        final Handler handler = new Handler();
-        final long start = SystemClock.uptimeMillis();
-        final float startRotation = mCurrent.getRotation();
-        final long duration = 1500;
-
-        final Interpolator interpolator = new LinearInterpolator();
-        handler.post(new Runnable() {
-            @Override
-            public void run() {
-                  long elapsed = SystemClock.uptimeMillis() -start;
-                  float t =interpolator.getInterpolation((float)elapsed/duration);
-                  float rot = t * i +(1-t)* startRotation;
-                  mCurrent.setRotation(-rot > 180?rot/2:rot);
-
-                  if(t<1.0){
-                      handler.postDelayed(this,16);
-                  }
-            }
-        });
-    }
-
-    private void startLocationUpdates() {
-
-        if(ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION)!= PackageManager.PERMISSION_GRANTED &&
-                ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) !=PackageManager.PERMISSION_GRANTED   )
-        {
-
-            return;
-        }
-        LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient,mLocationRequest,this);
-    }
-
-
-    @Override
-    public void onMapReady(GoogleMap googleMap) {
-        mMap = googleMap;
-
-
-    }
 
 
     @Override
     public void onConnected(@Nullable Bundle bundle) {
-        dispalyLocation();
+        displayLocation();
         startLocationUpdates();
     }
 
@@ -288,6 +269,11 @@ public class Welcome extends FragmentActivity implements OnMapReadyCallback,
     @Override
     public void onLocationChanged(Location location) {
         mLastLocation = location;
-        dispalyLocation();
+        displayLocation();
+    }
+
+    @Override
+    public void onMapReady(GoogleMap googleMap) {
+        mMap = googleMap;
     }
 }
