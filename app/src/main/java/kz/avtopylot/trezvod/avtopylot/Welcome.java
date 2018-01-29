@@ -1,6 +1,6 @@
 package kz.avtopylot.trezvod.avtopylot;
 
-import android.*;
+
 import android.Manifest;
 import android.content.pm.PackageManager;
 import android.location.Location;
@@ -76,7 +76,7 @@ public class Welcome extends FragmentActivity implements OnMapReadyCallback,
             public void onCheckedChanged(boolean isOnline) {
                 if(isOnline){
                     startLocationUbdates();
-                    dispalyLocation();
+                    displayLocation();
                     Snackbar.make(mapFragment.getView(),"You are online",Snackbar.LENGTH_SHORT).show();
                 }
                 else{
@@ -97,11 +97,12 @@ public class Welcome extends FragmentActivity implements OnMapReadyCallback,
             return;
         }
         LocationServices.FusedLocationApi.removeLocationUpdates(mGoogleApiClient,this);
+
     }
 
 
 
-    private void dispalyLocation() {
+    private void displayLocation() {
         if(ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION)!= PackageManager.PERMISSION_GRANTED &&
                 ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) !=PackageManager.PERMISSION_GRANTED   );
         {
@@ -176,7 +177,7 @@ public class Welcome extends FragmentActivity implements OnMapReadyCallback,
 
     @Override
     public void onConnectionSuspended(int i) {
-
+        mGoogleApiClient.connect();
     }
 
     @Override

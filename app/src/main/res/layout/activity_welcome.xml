@@ -15,7 +15,8 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:padding="16dp"
-            android:weightSum="10">
+            android:weightSum="10"
+            android:orientation="horizontal">
 
             <com.github.glomadrian.materialanimatedswitch.MaterialAnimatedSwitch
                 android:id="@+id/location_switch"
@@ -25,7 +26,7 @@
                 app:ball_press_color="@android:color/white"
                 app:ball_release_color="@color/ballReleaseColor"
                 app:base_press_color="@color/basePressColor"
-                app:base_realise_color="@color/baseRealiseColor"
+                app:base_release_color="@color/baseReleaseColor"
                 app:icon_press="@drawable/ic_location_on"
                 app:icon_release="@drawable/ic_location_off" />
         </LinearLayout>
